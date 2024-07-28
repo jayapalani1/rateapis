@@ -2,6 +2,8 @@ from datetime import datetime
 from datetime import timedelta
 
 
+"""
+Give a source and destination port returns the rates for a particular day"""
 def _get_port_rates_for_date(source, destination, single_date, cur):
     cur.execute('''SELECT price FROM prices where orig_code=%s\
                     AND dest_code=%s AND day=%s''', (source, destination, single_date,))
@@ -13,6 +15,9 @@ def _get_port_rates_for_date(source, destination, single_date, cur):
     return total_rates, number_of_rates
 
 
+"""
+Given two lists of ports returns total rates and number of dates for each dat in a timerange
+"""
 def _get_avg_port_rates_by_dates(source_ports: list, destination_ports: list, date_from: datetime, date_to: datetime, cur):
     rates_dict = {}
     days = int((date_to - date_from).days)
@@ -29,7 +34,9 @@ def _get_avg_port_rates_by_dates(source_ports: list, destination_ports: list, da
                 single_date += timedelta(days=1)
     return rates_dict
 
-
+"""
+Recursively goes through regions to return all child ports
+"""
 def _get_child_ports(regions: list, child_ports: list, cur):
     # TODO: Set limit on query
     cur.execute(f'''SELECT p.code, r2.slug FROM regions r1 \
@@ -48,6 +55,9 @@ def _get_child_ports(regions: list, child_ports: list, cur):
     return _get_child_ports(regions, child_ports, cur)
 
 
+"""
+Checks if the given vode belongs to a port
+"""
 def _is_port(port, cur):
     cur.execute('''SELECT 1 FROM ports where code = %s''', (port,))
     port = cur.fetchone()
@@ -56,28 +66,30 @@ def _is_port(port, cur):
     return 1
 
 
-def _get_rates_between_source_dest(source, destination, cur):
+"""
+Returns a list of ports given a region
+If the input is a port returns the port
+"""
+def _get_children_ports(source, cur):
     _is_source_port = _is_port(source, cur)
-    _is_dest_port = _is_port(destination, cur)
-    if _is_source_port and _is_dest_port:
-        return [source], [destination]
+    if _is_source_port:
+        return [source]
 
     if _is_source_port:
         child_source_ports = [source]
     else:
         child_source_ports = _get_child_ports(regions=[source], child_ports=[], cur=cur)
 
-    if _is_dest_port:
-        child_dest_ports = [destination]
-    else:
-        child_dest_ports = _get_child_ports(regions=[destination], child_ports=[], cur=cur)
-
-    return child_source_ports, child_dest_ports
+    return child_source_ports
 
 
+"""
+Compute average daily shipping rates given source and destination ports or slugs  and a daterange
+"""
 def get_rates(source, destination, date_from, date_to, cur):
 
-    child_source_ports, child_dest_ports = _get_rates_between_source_dest(source, destination, cur)
+    child_source_ports = _get_children_ports(source, cur)
+    child_dest_ports = _get_children_ports(destination, cur)
     rates = _get_avg_port_rates_by_dates(child_source_ports, child_dest_ports, date_from, date_to, cur)
     cur.close()
 

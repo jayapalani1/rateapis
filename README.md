@@ -12,6 +12,8 @@ Run the following commands to install the required packages for rateapis
 
 ```pip install -r requirements.txt```
 
+```PGUSERNAME=postgres PGPASSWORD=ratestask flask --app run run```
+
 ## API endpoints
 ### /rates
 API to get average rates per day between ports or regions
