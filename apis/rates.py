@@ -3,7 +3,8 @@ from datetime import timedelta
 
 
 """
-Give a source and destination port returns the rates for a particular day"""
+Give a source and destination port returns the rates for a particular day
+"""
 def _get_port_rates_for_date(source, destination, single_date, cur):
     cur.execute('''SELECT price FROM prices where orig_code=%s\
                     AND dest_code=%s AND day=%s''', (source, destination, single_date,))
